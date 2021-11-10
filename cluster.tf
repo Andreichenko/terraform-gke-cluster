@@ -1,5 +1,5 @@
 module "network" {
-  source = "git::https://github.com/Andreichenko/terraform-gcp-vpc.git//vpc?ref=gke-node-pool-v2.0.1"
+  source = "git::https://github.com/Andreichenko/terraform-gcp-vpc.git//vpc?ref=gke-node-pool-v2.0.2"
   net_name     = "kube"
   subnet_name  = "kube-subnet"
   region           = "us-central1"
@@ -11,7 +11,7 @@ module "network" {
 }
 
 module "cluster" {
-  source                           = "git::https://github.com/Andreichenko/terraform-gcp-vpc.git//native-vpc?ref=gke-node-pool-v2.0.1"
+  source                           = "git::https://github.com/Andreichenko/terraform-gcp-vpc.git//native-vpc?ref=gke-node-pool-v2.0.2"
   region                           = "us-central1"
   name                             = "gke-cluster"
   project                          = "terraform-module-cluster"
@@ -23,7 +23,7 @@ module "cluster" {
 }
 
 module "node_pool" {
-  source             = "git::https://github.com/Andreichenko/terraform-gcp-vpc.git//node-pools?ref=gke-node-pool-v2.0.1"
+  source             = "git::https://github.com/Andreichenko/terraform-gcp-vpc.git//node-pools?ref=gke-node-pool-v2.0.2"
   name               = "gke-cluster-node-pool"
   region             = module.cluster.region
   gke_cluster_name   = module.cluster.name
