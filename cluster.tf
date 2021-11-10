@@ -1,4 +1,3 @@
-
 module "network" {
   source = "git::https://github.com/Andreichenko/terraform-gcp-vpc.git//vpc?ref=gke-node-pool-v2.0.1"
   network_name     = "kube"
@@ -6,9 +5,9 @@ module "network" {
   region           = "us-central1"
   enable_flow_logs = "false"
   // subnetwork primary and secondary CIDRS for IP aliasing
-  subnetwork_range    = "10.40.0.0/16"
-  subnetwork_pods     = "10.41.0.0/16"
-  subnetwork_services = "10.42.0.0/16"
+  subnetwork_range    = "10.240.0.0/16"
+  subnetwork_pods     = "10.241.0.0/16"
+  subnetwork_services = "10.242.0.0/16"
 }
 
 module "cluster" {
