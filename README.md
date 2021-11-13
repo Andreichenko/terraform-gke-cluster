@@ -31,3 +31,23 @@ Unzip the downloaded file:
 
 ```unzip terraform_0.13.4_linux_amd64.zip```
 
+You will need a file with the credentials that Terraform needs to interact with the Google Cloud API to create the cluster and related networking components. Head to the IAM & Admin section of the Google Cloud Console’s navigation sidebar, and selectService Accounts.Once there, create a service account
+
+Once you have created the service account, you will be prompted to select a role for it. For the purposes of this exercise, you can selectProject: Ownerfrom the Role dropdown menu.
+
+On the next page, click on CREATE KEY and select a JSON key type. Next, clone the repo.
+
+Once created, the file will be downloaded to your computer. Move the provider file to the Terraform project directory.
+Fill in the the project name with the ID of the project you created in the GCP Console, and fill in the credentials filename with the name of the service account key file that you just downloaded and moved to the project folder.
+
+```
+provider "google" {
+    credentials = file("./credentials.json")
+    project = "playground-s-21-67f210a5" 
+    region = var.region-common
+    version     = "~> 3.5.0"
+}
+```
+
+Run terraform init, plan and apply.
+
