@@ -1,52 +1,102 @@
-# GKE cluster implementation
-In this repository, I use modules that have a source from another repository. This is a VPC native creation module for creating a network with a specific block, as well as various other resources that will be described below. Also, some additions, descriptions and explanations can be found in the code itself.
+# GKE Cluster Infrastructure Deployment
 
+![Terraform Version](https://img.shields.io/badge/Terraform-%3E%3D%201.0.0-844FBA?logo=terraform)
+![GCP Provider](https://img.shields.io/badge/GCP%20Provider-%3E%3D%204.0.0-4285F4?logo=google-cloud)
+![CI/CD Validation](https://img.shields.io/github/actions/workflow/status/Andreichenko/terraform-gke-cluster/validate.yml?branch=master&label=CI%2FCD)
 
-## Prerequisites
-If you want to follow along and create your own GKE Cluster in Terraform, follow these steps.
+This repository contains the root Terraform configuration to deploy a private, highly-scalable, and secure **Google Kubernetes Engine (GKE)** cluster in GCP using infrastructure submodules from `module-tf-gcp-vpc`.
 
-- Create [Google Cloud Account](https://console.cloud.google.com/getting-started) and login
-- Create a project in your Google Cloud Account Cloud Console 
+---
 
-![GCP My First Project screenshot](https://user-images.githubusercontent.com/20015341/141650206-eeb75370-91f7-44d9-bc05-b293288b8300.png)
+## 📐 GKE Architecture & Network Topology
 
+The diagram below shows the infrastructure topology and GKE node pool configuration deployed by this project:
 
-- There is generally a default project created, which you can use, or click on the ```My First Project``` dropdown next to the Google Cloud Platform logo and create a new project. 
+```mermaid
+graph TD
+    subgraph GCP_Cloud ["🌐 Google Cloud Platform"]
+        subgraph VPC ["🌐 VPC Network: 'kube'"]
+            subgraph Subnet ["🔒 Subnetwork: 'kube-subnet'"]
+                NodeRange["Primary range (Nodes): 10.240.0.0/16"]
+                SecondaryPods["Secondary range (Pods): 10.241.0.0/16"]
+                SecondarySvcs["Secondary range (Services): 10.242.0.0/16"]
+            end
+        end
 
-![GCP Kubernetes Engine API Enable Screenshot](https://user-images.githubusercontent.com/20015341/141650223-5fb27741-2e35-4309-b101-8865d750fbca.png)
+        subgraph GKE_Cluster_Plane ["☸️ GKE Control Plane (Private)"]
+            MasterAPI["API Server (Latest Stable Version)"]
+        end
 
-- Once the project is created and you have it selected in the dropdown, on the left hand side find 
-```Kubernetes Engine → Configuration``` and enable the Kubernetes Engine API as shown below.
-Install the following
-- [terraform](https://learn.hashicorp.com/terraform/getting-started/install.html) ( v 13 ) 
-- [gcloud cli](http://cloud.google.com/sdk/docs#install_the_latest_cloud_tools_version_cloudsdk_current_version) ( make sure to gcloud login )
-- [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/%C2%A0%C2%A0) ( v1.15.11 )
+        subgraph Node_Pool ["📦 GKE Node Pool (e2-medium)"]
+            Node1["Worker Node 1"]
+            Node2["Worker Node 2"]
+            Node3["Worker Node 3 (Autoscaling: 1 to 3)"]
+        end
+    end
 
-
-Download the appropriate Terraform binary package for the provided lab server VM (Linux 64-bit) using the wget command:
-
-```wget -c https://releases.hashicorp.com/terraform/0.13.4/terraform_0.13.4_linux_amd64.zip```
-
-Unzip the downloaded file:
-
-```unzip terraform_0.13.4_linux_amd64.zip```
-
-You will need a file with the credentials that Terraform needs to interact with the Google Cloud API to create the cluster and related networking components. Head to the IAM & Admin section of the Google Cloud Console’s navigation sidebar, and selectService Accounts.Once there, create a service account
-
-Once you have created the service account, you will be prompted to select a role for it. For the purposes of this exercise, you can selectProject: Ownerfrom the Role dropdown menu.
-
-On the next page, click on CREATE KEY and select a JSON key type. Next, clone the repo.
-
-Once created, the file will be downloaded to your computer. Move the provider file to the Terraform project directory.
-Fill in the the project name with the ID of the project you created in the GCP Console, and fill in the credentials filename with the name of the service account key file that you just downloaded and moved to the project folder.
-
-```
-provider "google" {
-  credentials = file("./credentials.json")
-  project     = "playground-s-21-67f210a5" 
-  region      = var.region_common
-}
+    VPC_Source["module.network"] -->|1. Provision VPC & Subnets| VPC
+    Cluster_Source["module.cluster"] -->|2. Create GKE Control Plane| GKE_Cluster_Plane
+    Pool_Source["module.node_pool"] -->|3. Bind Node Pool to Cluster| Node_Pool
+    
+    MasterAPI -->|"Manage & Schedule"| Node_Pool
+    Node_Pool -->|Deploy in| Subnet
 ```
 
-Run terraform init, plan and apply.
+---
 
+## 📂 Repository Structure
+
+* **[cluster.tf](file://cluster.tf)**: Composes submodules to build the network, private cluster control plane, and autoscaling GKE Node Pool. It dynamically queries the Google API to retrieve the latest stable Kubernetes version.
+* **[provider.tf](file://provider.tf)**: Google provider setup. Reads target project and region dynamically.
+* **[variables.tf](file://variables.tf)**: Defines configurations variables (e.g. region).
+* **[versions.tf](file://versions.tf)**: Enforces required Terraform version (`>= 1.0`) and Google Cloud provider (`>= 4.0.0`).
+
+---
+
+## 🚀 How to Run & Deploy
+
+### 1. Setup GCP Authentication
+Instead of hardcoding service account JSON keys (anti-pattern), authenticate using Google Application Default Credentials (ADC):
+```sh
+gcloud auth application-default login
+```
+Set your current GCP project:
+```sh
+gcloud config set project YOUR_PROJECT_ID
+```
+
+### 2. Configure project variables
+Create a `terraform.tfvars` file (do not commit it!) or pass variables inline:
+```sh
+# Modify project inside provider.tf or use env variables
+export TF_VAR_region_common="us-central1"
+```
+
+### 3. Initialize and Deploy
+Initialize Terraform:
+```sh
+terraform init
+```
+Generate and review deployment plan:
+```sh
+terraform plan
+```
+Apply and provision the EKS cluster:
+```sh
+terraform apply
+```
+
+### 4. Connect to GKE Cluster
+Once the cluster is successfully provisioned, configure local `kubectl` access:
+```sh
+gcloud container clusters get-credentials gke-cluster --region us-central1 --project YOUR_PROJECT_ID
+```
+Verify the GKE nodes are ready:
+```sh
+kubectl get nodes
+```
+
+---
+
+## 🛡️ CI/CD Validation
+This repository has an active GitHub Actions workflow configured in `.github/workflows/validate.yml`. Upon every pull request or push to the `master` branch, it automatically initializes and validates the configuration of all GCP submodules using Terraform version `1.5.7` to ensure syntax compliance.
