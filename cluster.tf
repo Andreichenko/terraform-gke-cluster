@@ -1,3 +1,7 @@
+data "google_container_engine_versions" "default" {
+  location = "us-central1"
+}
+
 module "network" {
   source           = "git::https://github.com/Andreichenko/module-tf-gcp-vpc.git//vpc?ref=v2.0.0"
   net_name         = "kube"
@@ -18,7 +22,7 @@ module "cluster" {
   project                          = "terraform-module-cluster"
   network_name                     = "kube"
   nodes_subnetwork_name            = module.network.subnet
-  kubernetes_version               = "1.20.10-gke.1600"
+  kubernetes_version               = data.google_container_engine_versions.default.latest_master_version
   pods_secondary_ip_range_name     = module.network.gke_pod
   services_secondary_ip_range_name = module.network.gke_service
 }

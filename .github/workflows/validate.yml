@@ -29,7 +29,6 @@ jobs:
 
     - name: Terraform Init
       run: |
-        touch credentials.json
         terraform init -backend=false
 
     - name: Terraform Validate
