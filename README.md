@@ -42,10 +42,9 @@ Fill in the the project name with the ID of the project you created in the GCP C
 
 ```
 provider "google" {
-    credentials = file("./credentials.json")
-    project = "playground-s-21-67f210a5" 
-    region = var.region-common
-    version     = "~> 3.5.0"
+  credentials = file("./credentials.json")
+  project     = "playground-s-21-67f210a5" 
+  region      = var.region_common
 }
 ```
 
